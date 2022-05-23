@@ -43,8 +43,8 @@ func main() {
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
 
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
-	router.HandleFunc("/articles", articlesShowHandler).Methods("GET").Name("articles.index")
-	router.HandleFunc("/articles", articlesShowHandler).Methods("POST").Name("articles.store")
+	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
+	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 
 	// 404 페이지
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)

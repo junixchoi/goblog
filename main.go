@@ -8,18 +8,14 @@ import (
 )
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "<h1>Hello, Goblog</h1>")
 }
 
 func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, "about page")
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprint(w, "<h1>잘못된 경로입니다</h1>")
 }
 
@@ -37,6 +33,13 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "new article")
 }
 
+func forceHTMLMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
@@ -48,6 +51,9 @@ func main() {
 
 	// 404 페이지
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
+
+	// 미들웨어 사용
+	router.Use(forceHTMLMiddleware)
 
 	homeURL, _ := router.Get("home").URL()
 	fmt.Println("homeURL: ", homeURL)

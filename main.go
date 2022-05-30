@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -95,11 +96,14 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(errors) == 0 {
-		fmt.Fprintf(w, "validated! <br>")
-		fmt.Fprintf(w, "title is: %v <br>", title)
-		fmt.Fprintf(w, "title's length is: %v <br>", utf8.RuneCountInString(title))
-		fmt.Fprintf(w, "body is: %v <br>", body)
-		fmt.Fprintf(w, "body's length is: %v <br>", utf8.RuneCountInString(body))
+		lastInsertID, err := saveArticleToDB(title, body)
+		if lastInsertID > 0 {
+			fmt.Fprint(w, "insert success, ID is : "+strconv.FormatInt(lastInsertID, 10))
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 error")
+		}
 	} else {
 		storeURL, _ := router.Get("articles.store").URL()
 
@@ -119,6 +123,38 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
+}
+
+func saveArticleToDB(title string, body string) (int64, error) {
+	// 변수 초기화
+	var (
+		id   int64
+		err  error
+		rs   sql.Result
+		stmt *sql.Stmt
+	)
+
+	// 1. prepare
+	stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?,?)")
+	if err != nil {
+		return 0, err
+	}
+
+	// 2. defer
+	defer stmt.Close()
+
+	// 3. execute
+	rs, err = stmt.Exec(title, body)
+	if err != nil {
+		return 0, err
+	}
+
+	// 4. return ID
+	if id, err = rs.LastInsertId(); id > 0 {
+		return id, nil
+	}
+
+	return 0, err
 }
 
 func forceHTMLMiddleware(next http.Handler) http.Handler {

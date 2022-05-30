@@ -1,13 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
@@ -18,11 +22,11 @@ var db *sql.DB
 func initDB() {
 	var err error
 	config := mysql.Config{
-		User: "root",
-		Passwd: "",
-		Addr: "127.0.0.1:3306"
-		Net: "tcp"
-		DBName: "goblog"
+		User:                 "root",
+		Passwd:               "",
+		Addr:                 "127.0.0.1:3306",
+		Net:                  "tcp",
+		DBName:               "goblog",
 		AllowNativePasswords: true,
 	}
 
@@ -154,8 +158,25 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func createTables() {
+	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
+    id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    title varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    body longtext COLLATE utf8mb4_unicode_ci
+); `
+
+	_, err := db.Exec(createArticlesSQL)
+	checkError(err)
+}
+
+type Result interface {
+	LastInsertId() (int64, error)
+	RowsAffected() (int64, error)
+}
+
 func main() {
 	initDB()
+	createTables()
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
 

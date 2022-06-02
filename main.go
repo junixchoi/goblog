@@ -36,6 +36,16 @@ type Result interface {
 	RowsAffected() (int64, error)
 }
 
+// generate article link
+func (a Article) Link() string {
+	showURL, err := router.Get("articles.show").URL("id", strconv.FormatInt(a.ID, 10))
+	if err != nil {
+		checkError(err)
+		return ""
+	}
+	return showURL.String()
+}
+
 func initDB() {
 	var err error
 	config := mysql.Config{
@@ -106,7 +116,28 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "articles list")
+	// 리스트 조회
+	rows, err := db.Query("SELECT * FROM articles")
+	checkError(err)
+	defer rows.Close()
+
+	var articles []Article
+	// loop
+	for rows.Next() {
+		var article Article
+		err := rows.Scan(&article.ID, &article.Title, &article.Body)
+		checkError(err)
+		articles = append(articles, article)
+	}
+
+	err = rows.Err()
+	checkError(err)
+
+	tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+	checkError(err)
+
+	err = tmpl.Execute(w, articles)
+	checkError(err)
 }
 
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {

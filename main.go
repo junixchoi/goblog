@@ -31,6 +31,11 @@ type ArticlesFormData struct {
 	Errors      map[string]string
 }
 
+type Result interface {
+	LastInsertId() (int64, error)
+	RowsAffected() (int64, error)
+}
+
 func initDB() {
 	var err error
 	config := mysql.Config{
@@ -73,13 +78,10 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := getRouteVariable("id", r)
 
 	// 문장 데이터 획득
-	article := Article{}
-	query := "SELECT * FROM articles WHERE id = ?"
-	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+	article, err := getArticleByID(id)
 
 	// 에러 발생 시
 	if err != nil {
@@ -225,6 +227,129 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getRouteVariable(parameterName string, r *http.Request) string {
+	vars := mux.Vars(r)
+	return vars[parameterName]
+}
+
+func getArticleByID(id string) (Article, error) {
+	article := Article{}
+	query := "SELECT * FROM articles WHERE id = ?"
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+	return article, err
+}
+
+func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
+	// URL 파라미터
+	id := getRouteVariable("id", r)
+
+	// 문장 데이터 획득
+	article, err := getArticleByID(id)
+
+	// 에러 발생 시
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 404 에러
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "404 error")
+		} else {
+			// 서버 에러
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Internal Server Error")
+		}
+	} else {
+		// 데이터 조회 성공, 폼 표시
+		updateURL, _ := router.Get("articles.update").URL("id", id)
+		data := ArticlesFormData{
+			Title:  article.Title,
+			Body:   article.Body,
+			URL:    updateURL,
+			Errors: nil,
+		}
+
+		tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+		checkError(err)
+
+		err = tmpl.Execute(w, data)
+		checkError(err)
+	}
+}
+
+func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	// URL 파라미터
+	id := getRouteVariable("id", r)
+
+	// 문장 데이터 획득
+	_, err := getArticleByID(id)
+
+	// 에러 발생 시
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 404 에러
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "404 error")
+		} else {
+			// 서버 에러
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Internal Server Error")
+		}
+	} else {
+		title := r.PostFormValue("title")
+		body := r.PostFormValue("body")
+
+		errors := make(map[string]string)
+
+		// 타이틀 검증
+		if title == "" {
+			errors["title"] = "title is empty."
+		} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
+			errors["title"] = "title length must be 3 ~40"
+		}
+
+		// 내용 검증
+		if body == "" {
+			errors["body"] = "body is empty."
+		} else if utf8.RuneCountInString(body) < 10 {
+			errors["body"] = "body length must be > 10"
+		}
+
+		if len(errors) == 0 {
+			// 데이터 업데이트
+			query := "UPDATE articles SET title = ?, body = ? WHERE id = ?"
+			rs, err := db.Exec(query, title, body, id)
+
+			if err != nil {
+				checkError(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, "500 Internal Server Error")
+			}
+
+			// 업데이트 성공 이후 상세 페이지로 이동
+			if n, _ := rs.RowsAffected(); n > 0 {
+				showURL, _ := router.Get("articles.show").URL("id", id)
+				http.Redirect(w, r, showURL.String(), http.StatusFound)
+			} else {
+				fmt.Fprint(w, "수정한 내용이 없습니다.")
+			}
+		} else {
+			updateURL, _ := router.Get("articles.update").URL("id", id)
+			data := ArticlesFormData{
+				Title:  title,
+				Body:   body,
+				URL:    updateURL,
+				Errors: errors,
+			}
+			tmpl, err := template.ParseFiles("resources/views/articles/edit.gohtml")
+			checkError(err)
+
+			err = tmpl.Execute(w, data)
+			checkError(err)
+		}
+	}
+}
+
 func createTables() {
 	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
     id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
@@ -234,11 +359,6 @@ func createTables() {
 
 	_, err := db.Exec(createArticlesSQL)
 	checkError(err)
-}
-
-type Result interface {
-	LastInsertId() (int64, error)
-	RowsAffected() (int64, error)
 }
 
 func main() {
@@ -251,6 +371,8 @@ func main() {
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
+	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
+	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 
 	// 404 페이지
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)

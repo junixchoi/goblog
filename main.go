@@ -20,6 +20,17 @@ import (
 var router = mux.NewRouter()
 var db *sql.DB
 
+type Article struct {
+	Title, Body string
+	ID          int64
+}
+
+type ArticlesFormData struct {
+	Title, Body string
+	URL         *url.URL
+	Errors      map[string]string
+}
+
 func initDB() {
 	var err error
 	config := mysql.Config{
@@ -61,19 +72,39 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
+	// URL 파라미터
 	vars := mux.Vars(r)
 	id := vars["id"]
-	fmt.Fprint(w, "Article ID: "+id)
+
+	// 문장 데이터 획득
+	article := Article{}
+	query := "SELECT * FROM articles WHERE id = ?"
+	err := db.QueryRow(query, id).Scan(&article.ID, &article.Title, &article.Body)
+
+	// 에러 발생 시
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 404 에러
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "404 error")
+		} else {
+			// 서버 에러
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Internal Server Error")
+		}
+	} else {
+		// 데이터 조회 성공
+		tmpl, err := template.ParseFiles("resources/views/articles/show.gohtml")
+		checkError(err)
+
+		err = tmpl.Execute(w, article)
+		checkError(err)
+	}
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "articles list")
-}
-
-type ArticlesFormData struct {
-	Title, Body string
-	URL         *url.URL
-	Errors      map[string]string
 }
 
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {

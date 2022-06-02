@@ -46,6 +46,36 @@ func (a Article) Link() string {
 	return showURL.String()
 }
 
+func (a Article) Delete() (rowsAffected int64, err error) {
+	rs, err := db.Exec("DELETE FROM articles WHERE id = " + strconv.FormatInt(a.ID, 10))
+
+	if err != nil {
+		return 0, err
+	}
+
+	if n, _ := rs.RowsAffected(); n > 0 {
+		return n, nil
+	}
+
+	return 0, nil
+}
+
+// 라우트 명칭으로 URL 획득
+func RouteName2URL(routeName string, pairs ...string) string {
+	url, err := router.Get(routeName).URL(pairs...)
+	if err != nil {
+		checkError(err)
+		return ""
+	}
+
+	return url.String()
+}
+
+// int64 를 스트링으로 전환
+func Int64ToString(num int64) string {
+	return strconv.FormatInt(num, 10)
+}
+
 func initDB() {
 	var err error
 	config := mysql.Config{
@@ -107,7 +137,12 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// 데이터 조회 성공
-		tmpl, err := template.ParseFiles("resources/views/articles/show.gohtml")
+		tmpl, err := template.New("show.gohtml").
+			Funcs(template.FuncMap{
+				"RouteName2URL": RouteName2URL,
+				"Int64ToString": Int64ToString,
+			}).
+			ParseFiles("resources/views/articles/show.gohtml")
 		checkError(err)
 
 		err = tmpl.Execute(w, article)
@@ -381,6 +416,45 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	// URL 파라미터
+	id := getRouteVariable("id", r)
+
+	// 문장 데이터 획득
+	article, err := getArticleByID(id)
+
+	// 에러 발생 시
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 404 에러
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, "404 error")
+		} else {
+			// 서버 에러
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Internal Server Error")
+		}
+	} else {
+		// 삭제
+		rowsAffected, err := article.Delete()
+
+		if err != nil {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "500 Internal Server Error")
+		} else {
+			if rowsAffected > 0 {
+				indexURL, _ := router.Get("articles.index").URL()
+				http.Redirect(w, r, indexURL.String(), http.StatusFound)
+			} else {
+				w.WriteHeader(http.StatusNotFound)
+				fmt.Fprint(w, "404 error")
+			}
+		}
+	}
+}
+
 func createTables() {
 	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
     id bigint(20) PRIMARY KEY AUTO_INCREMENT NOT NULL,
@@ -404,6 +478,7 @@ func main() {
 	router.HandleFunc("/articles/create", articlesCreateHandler).Methods("GET").Name("articles.create")
 	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
+	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
 
 	// 404 페이지
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)

@@ -8,5 +8,10 @@
     <p>ID: {{ .ID }}</p>
     <p>Title: {{ .Title }}</p>
     <p>Content: {{ .Body }}</p>
+
+    {{ $idString := Int64ToString .ID }}
+    <form action="{{ RouteName2URL "articles.delete" "id" $idString }}" method="post">
+        <button type="submit" onclick="return confirm('delete sure ?')">Delete</button>
+    </form>
 </body>
 </html>

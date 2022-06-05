@@ -1,4 +1,4 @@
-module github.com/junixchoi/goblog
+module goblog
 
 go 1.18
 

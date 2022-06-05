@@ -109,7 +109,7 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 
 	// 문장 데이터 획득
 	article, err := getArticleByID(id)
@@ -284,11 +284,6 @@ func articlesCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getRouteVariable(parameterName string, r *http.Request) string {
-	vars := mux.Vars(r)
-	return vars[parameterName]
-}
-
 func getArticleByID(id string) (Article, error) {
 	article := Article{}
 	query := "SELECT * FROM articles WHERE id = ?"
@@ -298,7 +293,7 @@ func getArticleByID(id string) (Article, error) {
 
 func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 
 	// 문장 데이터 획득
 	article, err := getArticleByID(id)
@@ -335,7 +330,7 @@ func articlesEditHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 
 	// 문장 데이터 획득
 	_, err := getArticleByID(id)
@@ -409,7 +404,7 @@ func articlesUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 func articlesDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
-	id := getRouteVariable("id", r)
+	id := route.GetRouteVariable("id", r)
 
 	// 문장 데이터 획득
 	article, err := getArticleByID(id)

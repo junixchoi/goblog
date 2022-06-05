@@ -13,6 +13,7 @@ import (
 
 	"github.com/junixchoi/goblog/pkg/logger"
 	"github.com/junixchoi/goblog/pkg/route"
+	"github.com/junixchoi/goblog/pkg/types"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
@@ -60,11 +61,6 @@ func (a Article) Delete() (rowsAffected int64, err error) {
 	}
 
 	return 0, nil
-}
-
-// int64 를 스트링으로 전환
-func Int64ToString(num int64) string {
-	return strconv.FormatInt(num, 10)
 }
 
 func initDB() {
@@ -125,7 +121,7 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.New("show.gohtml").
 			Funcs(template.FuncMap{
 				"RouteName2URL": route.Name2URL,
-				"Int64ToString": Int64ToString,
+				"Int64ToString": types.Int64ToString,
 			}).
 			ParseFiles("resources/views/articles/show.gohtml")
 		logger.LogError(err)

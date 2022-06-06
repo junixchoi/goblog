@@ -62,18 +62,6 @@ func (a Article) Delete() (rowsAffected int64, err error) {
 	return 0, nil
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>Hello, Goblog</h1>")
-}
-
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "about page")
-}
-
-func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "<h1>잘못된 경로입니다</h1>")
-}
-
 func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 	// URL 파라미터
 	id := route.GetRouteVariable("id", r)
@@ -415,9 +403,6 @@ func main() {
 	route.Initialize()
 	router = route.Router
 
-	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
-	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
-
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesShowHandler).Methods("GET").Name("articles.show")
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
@@ -425,9 +410,6 @@ func main() {
 	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
 	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
-
-	// 404 페이지
-	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
 
 	// 미들웨어 사용
 	router.Use(forceHTMLMiddleware)

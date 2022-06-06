@@ -12,7 +12,7 @@ func SetupDB() {
 
 	sqlDB.SetMaxOpenConns(100)
 
-	sqlDB.SetMaxIdleConn(25)
+	sqlDB.SetMaxIdleConns(25)
 
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 }

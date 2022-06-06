@@ -30,7 +30,7 @@ func initDB() {
 	DB, err = sql.Open("mysql", config.FormatDSN())
 	logger.LogError(err)
 
-	DB.SetMaxOpenConns(25)
+	DB.SetMaxOpenConns(100)
 	DB.SetMaxIdleConns(25)
 	DB.SetConnMaxLifetime(5 * time.Minute)
 

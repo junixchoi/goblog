@@ -1,13 +1,15 @@
 package controllers
 
 import (
-	"database/sql"
 	"fmt"
+	"goblog/app/models/article"
 	"goblog/pkg/logger"
 	"goblog/pkg/route"
 	"goblog/pkg/types"
 	"html/template"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
 type ArticlesController struct {
@@ -18,11 +20,11 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 	id := route.GetRouteVariable("id", r)
 
 	// 문장 데이터 획득
-	article, err := getArticleByID(id)
+	article, err := article.Get(id)
 
 	// 에러 발생 시
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == gorm.ErrRecordNotFound {
 			// 404 에러
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, "404 error")
@@ -41,8 +43,6 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 			}).
 			ParseFiles("resources/views/articles/show.gohtml")
 		logger.LogError(err)
-
-		err = tmpl.Execute(w, article)
-		logger.LogError(err)
+		tmpl.Execute(w, article)
 	}
 }

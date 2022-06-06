@@ -17,5 +17,6 @@ func (*PagesController) About(w http.ResponseWriter, r *http.Request) {
 }
 
 func (*PagesController) NotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
 	fmt.Fprint(w, "<h1>잘못된 경로입니다</h1>")
 }

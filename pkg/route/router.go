@@ -1,17 +1,24 @@
 package route
 
 import (
+	"goblog/pkg/logger"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
+
+var route *mux.Router
+
+func SetRoute(r *mux.Router) {
+	route = r
+}
 
 // 라우트 명칭으로 URL 획득
 func Name2URL(routeName string, pairs ...string) string {
 	var route *mux.Router
 	url, err := route.Get(routeName).URL(pairs...)
 	if err != nil {
-		// checkError(err)
+		logger.LogError(err)
 		return ""
 	}
 

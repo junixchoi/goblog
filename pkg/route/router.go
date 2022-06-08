@@ -15,7 +15,6 @@ func SetRoute(r *mux.Router) {
 
 // 라우트 명칭으로 URL 획득
 func Name2URL(routeName string, pairs ...string) string {
-	var route *mux.Router
 	url, err := route.Get(routeName).URL(pairs...)
 	if err != nil {
 		logger.LogError(err)

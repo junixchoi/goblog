@@ -29,19 +29,19 @@ func (*ArticlesController) Show(w http.ResponseWriter, r *http.Request) {
 		if err == gorm.ErrRecordNotFound {
 			// 404 에러
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, "404 error")
+			fmt.Fprint(w, "404 Error")
 		} else {
 			// 서버 에러
 			logger.LogError(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "500 Internal Server Error")
+			fmt.Fprint(w, "500 Error")
 		}
 	} else {
 		// 데이터 조회 성공
 		tmpl, err := template.New("show.gohtml").
 			Funcs(template.FuncMap{
-				"RouteName2URL": route.Name2URL,
-				"Int64ToString": types.Int64ToString,
+				"RouteName2URL":  route.Name2URL,
+				"Uint64ToString": types.Uint64ToString,
 			}).
 			ParseFiles("resources/views/articles/show.gohtml")
 		logger.LogError(err)

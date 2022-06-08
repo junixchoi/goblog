@@ -2,7 +2,7 @@ package article
 
 import (
 	"goblog/pkg/route"
-	"strconv"
+	"goblog/pkg/types"
 )
 
 type Article struct {
@@ -12,5 +12,5 @@ type Article struct {
 }
 
 func (a Article) Link() string {
-	return route.Name2URL("articles.show", "id", strconv.FormatUint(a.ID, 10))
+	return route.Name2URL("articles.show", "id", types.Uint64ToString(a.ID))
 }

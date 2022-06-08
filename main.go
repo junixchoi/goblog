@@ -237,8 +237,6 @@ func main() {
 	bootstrap.SetupDB()
 	router = bootstrap.SetupRoute()
 
-	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
-	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 	router.HandleFunc("/articles/{id:[0-9]+}/delete", articlesDeleteHandler).Methods("POST").Name("articles.delete")
 
 	// 미들웨어 사용

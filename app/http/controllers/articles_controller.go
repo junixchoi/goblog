@@ -93,7 +93,7 @@ func validateArticleFormData(title string, body string) map[string]string {
 	if title == "" {
 		errors["title"] = "title is empty."
 	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
-		errors["title"] = "title length must be 3 ~40"
+			errors["title"] = "title length must be 3 ~40"
 	}
 
 	// 내용 검증

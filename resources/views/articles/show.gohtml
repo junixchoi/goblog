@@ -12,8 +12,7 @@
       <hr>
       {{ .Body }}
 
-      {{ $idString := Uint64ToString .ID  }}
-      <form class="mt-4" action="{{ RouteName2URL "articles.delete" "id" $idString }}" method="post">
+      <form class="mt-4" action="{{ RouteName2URL "articles.delete" "id" .GetStringID }}" method="post">
           <button type="submit" onclick="return confirm('Delete?')">Delete</button>
       </form>
 

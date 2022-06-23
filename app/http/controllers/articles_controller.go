@@ -8,6 +8,7 @@ import (
 	"goblog/pkg/types"
 	"html/template"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"unicode/utf8"
 
@@ -57,10 +58,17 @@ func (*ArticlesController) Index(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "500 Error")
 	} else {
-		tmpl, err := template.ParseFiles("resources/views/articles/index.gohtml")
+		viewDir := "resources/views"
+
+		files, err := filepath.Glob(viewDir + "/layouts/*.gohtml")
 		logger.LogError(err)
 
-		tmpl.Execute(w, articles)
+		newFiles := append(files, viewDir+"/articles/index.gohtml")
+
+		tmpl, err := template.ParseFiles(newFiles...)
+		logger.LogError(err)
+
+		tmpl.ExecuteTemplate(w, "app", articles)
 	}
 }
 
@@ -93,7 +101,7 @@ func validateArticleFormData(title string, body string) map[string]string {
 	if title == "" {
 		errors["title"] = "title is empty."
 	} else if utf8.RuneCountInString(title) < 3 || utf8.RuneCountInString(title) > 40 {
-			errors["title"] = "title length must be 3 ~40"
+		errors["title"] = "title length must be 3 ~40"
 	}
 
 	// 내용 검증
